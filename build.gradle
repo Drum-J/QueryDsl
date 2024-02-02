@@ -34,6 +34,8 @@ dependencies {
     annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jakarta"
     annotationProcessor "jakarta.annotation:jakarta.annotation-api"
     annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+    implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.1' // 쿼리 파라미터 확인
 }
 
 tasks.named('test') {
