@@ -2,17 +2,16 @@ package study.querydsl;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
-import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 import static org.assertj.core.api.Assertions.*;
+import static study.querydsl.entity.QMember.*; // Static Import 로 변경
 
 @SpringBootTest
 @Transactional
@@ -54,10 +53,8 @@ public class QueryDslBasicTest {
 
     @Test
     void startQueryDsl() throws Exception {
-        QMember m = new QMember("m"); // QMember 를 구분하는 이름이라고 한다. 이렇게는 잘 안쓰고 QMember.member 를 자주 사용한다고 함.
-
-        Member findMember = query.selectFrom(m)
-                .where(m.username.eq("member1"))
+        Member findMember = query.selectFrom(member)
+                .where(member.username.eq("member1"))
                 .fetchOne();
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
