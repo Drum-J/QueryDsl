@@ -133,4 +133,47 @@ public class QueryDslBasicTest {
         assertThat(memberNull.getUsername()).isEqualTo(null);
 
     }
+
+    @Test
+    void paging1() throws Exception {
+        List<Member> result = query.selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+
+        assertThat(result.size()).isEqualTo(2);
+    }
+
+    @Test
+    void paging2_Deprecated() throws Exception {
+        QueryResults<Member> results = query.selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults();
+
+        assertThat(results.getTotal()).isEqualTo(4); // select count(m.id) from Member m
+        assertThat(results.getOffset()).isEqualTo(1);
+        assertThat(results.getLimit()).isEqualTo(2);
+        assertThat(results.getResults().size()).isEqualTo(2);
+    }
+
+    @Test
+    void paging3() throws Exception {
+        // .fetchResults() 가 deprecated 됨에 따라 우선 이렇게 count 쿼리를 따로 작성해야 한다는 것만 알아두자.
+
+        List<Member> members = query.selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+
+        Long total = query.select(member.count())
+                .from(member)
+                .fetchOne();
+
+        assertThat(members.size()).isEqualTo(2);
+        assertThat(total).isEqualTo(4);
+    }
 }
