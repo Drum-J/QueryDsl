@@ -12,11 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
-import study.querydsl.entity.QTeam;
+import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 import java.util.List;
 
+import static com.querydsl.jpa.JPAExpressions.*; // 서브쿼리 Static Import
 import static org.assertj.core.api.Assertions.*;
 import static study.querydsl.entity.QMember.*; // Static Import 로 변경
 import static study.querydsl.entity.QTeam.*;
@@ -333,5 +334,80 @@ public class QueryDslBasicTest {
 
         boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
         assertThat(loaded).as("페치 조인 적용").isTrue();
+    }
+
+    /**
+     * 나이가 가장 많은 회원 조회
+     */
+    @Test
+    void subQuery() throws Exception {
+        QMember subMember = new QMember("subMember"); // 서브쿼리용 QMember 생성 alias 가 겹치면 안되기 때문
+
+        List<Member> result = query
+                .selectFrom(member)
+                .where(member.age.eq(
+                        // 서브쿼리 사용
+                        select(subMember.age.max())
+                                .from(subMember)
+                ))
+                .fetch();
+        assertThat(result).extracting("age")
+                .containsExactly(23);
+
+        assertThat(result.get(0).getUsername()).isEqualTo("member4");
+    }
+
+    /**
+     * 나이가 평균 이상인 회원
+     */
+    @Test
+    void subQueryGoe() throws Exception {
+        QMember subMember = new QMember("subMember");
+
+        List<Member> result = query
+                .selectFrom(member)
+                .where(member.age.goe(
+                        select(subMember.age.avg())
+                                .from(subMember)
+                ))
+                .fetch();
+
+        assertThat(result.size()).isEqualTo(2);
+        assertThat(result).extracting("age").containsExactly(22, 23);
+    }
+
+    @Test
+    void subQueryIn() throws Exception {
+        QMember subMember = new QMember("subMember");
+
+        List<Member> result = query
+                .selectFrom(member)
+                .where(member.age.in(
+                        select(subMember.age)
+                                .from(subMember)
+                                .where(subMember.age.gt(20))
+                ))
+                .fetch();
+
+        //List<Member> result = query.selectFrom(member).where(member.age.gt(20)).fetch();
+
+        assertThat(result.size()).isEqualTo(3);
+        assertThat(result).extracting("age").containsExactly(21,22, 23);
+    }
+
+    @Test
+    void selectSubQuery() throws Exception {
+        QMember subMember = new QMember("subMember");
+
+        List<Tuple> result = query
+                .select(member.username,
+                        select(subMember.age.avg())
+                                .from(subMember))
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
     }
 }
