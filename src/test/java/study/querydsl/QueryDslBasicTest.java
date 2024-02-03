@@ -2,6 +2,7 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -408,6 +409,35 @@ public class QueryDslBasicTest {
 
         for (Tuple tuple : result) {
             System.out.println("tuple = " + tuple);
+        }
+    }
+
+    @Test
+    void basicCase() throws Exception {
+        List<String> result = query
+                .select(member.age
+                        .when(20).then("스무살")
+                        .when(21).then("스물한살")
+                        .otherwise("기타")) // SQL과 달리 case, end 없이 바로 when then otherwise(else)를 사용한다.
+                .from(member)
+                .fetch();
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    void complexCase() throws Exception {
+        List<String> result = query
+                .select(new CaseBuilder()
+                        .when(member.age.between(0, 20)).then("0~20살")
+                        .when(member.age.between(21, 30)).then("21~30살")
+                        .otherwise("30살 이상"))
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
         }
     }
 }
