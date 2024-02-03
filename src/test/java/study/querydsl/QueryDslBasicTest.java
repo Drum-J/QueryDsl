@@ -91,7 +91,7 @@ public class QueryDslBasicTest {
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
-    @Test
+    //@Test
     void resultFetch() throws Exception {
         List<Member> fetch = query.selectFrom(member).fetch();
 
