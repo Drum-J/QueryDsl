@@ -2,8 +2,11 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -13,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
@@ -463,6 +468,140 @@ public class QueryDslBasicTest {
 
         for (String s : result) {
             System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    void simpleProjection() throws Exception {
+        List<String> result = query
+                .select(member.username)
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("username = " + s);
+        }
+    }
+
+    @Test
+    void tupleProjection() throws Exception {
+        List<Tuple> result = query
+                .select(member.username, member.age)
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            String username = tuple.get(member.username);
+            Integer age = tuple.get(member.age);
+
+            System.out.println("username = " + username);
+            System.out.println("age = " + age);
+        }
+    }
+
+    @Test
+    void findDtoByJPQL() throws Exception {
+        List<MemberDto> result = em.createQuery("select new study.querydsl.dto.MemberDto(m.username,m.age) from Member m", MemberDto.class)
+                .getResultList();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    void findDtoBySetter() throws Exception {
+        // MemberDto의 기본 생성자가 있어야 한다. QueryDsl이 MemberDto의 기본 생성자를 만든 이후에 Setter 를 사용해서 데이터를 설정하기 때문
+        List<MemberDto> result = query
+                .select(Projections.bean(MemberDto.class, // 타입 지정 -> MemberDto 타입으로 가져올 것이다.
+                        member.username, // 꺼내올 값 지정 -> username 과 age 를 가져올 것이다.
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    void findUserDtoBySetter() throws Exception {
+        List<UserDto> result = query
+                .select(Projections.bean(UserDto.class,
+                        member.username.as("name"),
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
+    @Test
+    void findDtoByField() throws Exception {
+        //필드에다가 바로 값을 꽂아버린다. getter,setter 필요가 없음. 단! 기본 생성자는 마찬가지로 필요하다.
+        List<MemberDto> result = query
+                .select(Projections.fields(MemberDto.class, // 타입 지정 -> MemberDto 타입으로 가져올 것이다.
+                        member.username, // 꺼내올 값 지정 -> username 과 age 를 가져올 것이다.
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    void findUserDto() throws Exception {
+        QMember subMember = new QMember("subMember");
+
+        List<UserDto> result = query
+                .select(Projections.fields(UserDto.class,
+                        //member.username, // UserDto의 필드명과 일치 하지 않아서 무시된다. null처리됨
+                        member.username.as("name"), // 별칭을 사용해서 필드명과 일치시켜준다.
+
+                        // member.age,
+                        ExpressionUtils.as(JPAExpressions
+                                        .select(subMember.age.max())
+                                        .from(subMember),"age")
+                        // 서브쿼리를 사용할 경우에는 별칭을 주지 못하기 때문에 ExpressionUtils.as(source,alias) 를 사용해서 별칭을 지정해줘야 한다.
+                ))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
+    @Test
+    void findDtoByConstructor() throws Exception {
+        List<MemberDto> result = query
+                .select(Projections.constructor(MemberDto.class, // 타입 지정 -> MemberDto 타입으로 가져올 것이다.
+                        member.username, // 꺼내올 값 지정 -> username 과 age 를 가져올 것이다.
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    void findUserDtoBuConstructor() throws Exception {
+        //생성자를 통한 DTO 반환의 경우에는 별칭을 사용하지 않아도 된다. 생성자와 동일한 파라미터를 넘겨주기만 하면 OK
+        List<UserDto> result = query
+                .select(Projections.constructor(UserDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
         }
     }
 }
