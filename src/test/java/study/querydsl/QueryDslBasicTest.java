@@ -676,4 +676,40 @@ public class QueryDslBasicTest {
     private BooleanExpression allEq(String usernameCond, Integer ageCond) {
         return usernameEq(usernameCond).and(ageEq(ageCond));
     }
+
+    @Test
+    void bulkUpdate() throws Exception {
+        //member1.age = 20 -> 비회원
+        //member2.age = 21 -> 비회원
+        //member3.age = 22
+        //member4.age = 23
+
+        long count = query
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(22))
+                .execute();
+
+        //매우 중요!! Bulk 연산 후에는 영속성 컨텍스트를 초기화 해주는 게 좋다.
+        em.flush();
+        em.clear();
+
+        System.out.println("count = " + count); //업데이트 수행 횟수를 반환한다.
+    }
+
+    @Test
+    void bulkAdd() throws Exception {
+        long addAge = query
+                .update(member)
+                .set(member.age, member.age.add(1))
+                .execute();
+    }
+
+    @Test
+    void bulkDelete() throws Exception {
+        long delete = query
+                .delete(member)
+                .where(member.age.gt(22))
+                .execute();
+    }
 }
