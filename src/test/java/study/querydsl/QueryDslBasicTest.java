@@ -712,4 +712,30 @@ public class QueryDslBasicTest {
                 .where(member.age.gt(22))
                 .execute();
     }
+
+    @Test
+    void sqlFunction_replace() throws Exception {
+        List<String> result = query
+                .select(Expressions.stringTemplate(
+                        "function('replace', {0}, {1}, {2})",
+                        member.username, "member", "M"))
+                .from(member)
+                .fetch();
+
+        System.out.println("result = " + result);
+    }
+
+    @Test
+    void sqlFunction_lower() throws Exception {
+        List<String> result = query
+                .select(member.username)
+                .from(member)
+                .where(member.username.eq(Expressions.stringTemplate(
+                        "function('lower', {0})"
+                        , member.username)))
+                //.where(member.username.eq(member.username.lower()))
+                .fetch();
+
+        System.out.println("result = " + result);
+    }
 }
