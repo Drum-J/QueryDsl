@@ -1,6 +1,8 @@
 package study.querydsl.repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -95,6 +97,43 @@ public class MemberJpaRepository {
                 .leftJoin(member.team, team)
                 .where(builder)
                 .fetch();
+    }
+
+    public List<MemberTeamDto> search(MemberSearchCondition condition) {
+
+        return query
+                .select(new QMemberTeamDto(
+                        member.id.as("memberId"),
+                        member.username,
+                        member.age,
+                        team.id,
+                        team.name))
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                )
+                .fetch();
+    }
+
+    private BooleanExpression usernameEq(String usernameCond) {
+        return hasText(usernameCond) ? member.username.eq(usernameCond) : null;
+        // return isEmpty(usernameCond) ? null : member.username.eq(usernameCond);
+    }
+
+    private BooleanExpression teamNameEq(String teamNameCond) {
+        return hasText(teamNameCond) ? team.name.eq(teamNameCond) : null;
+    }
+
+    private BooleanExpression ageGoe(Integer ageGoeCond) {
+        return ageGoeCond != null ? member.age.goe(ageGoeCond) : null;
+    }
+
+    private BooleanExpression ageLoe(Integer ageLoeCond) {
+        return ageLoeCond != null ? member.age.loe(ageLoeCond) : null;
     }
 
 }

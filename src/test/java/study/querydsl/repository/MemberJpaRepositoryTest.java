@@ -61,7 +61,7 @@ class MemberJpaRepositoryTest {
     }
 
     @Test
-    void searchTest() throws Exception {
+    void searchTestByBuilder() throws Exception {
         //given
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
@@ -88,6 +88,37 @@ class MemberJpaRepositoryTest {
         List<MemberTeamDto> result = memberRepository.searchByBuilder(condition);
 
         //then
+        assertThat(result).extracting("username").containsExactly("member4");
+    }
+
+    @Test
+    void searchTestByWhere() throws Exception {
+        //given
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+        em.persist(teamA);
+        em.persist(teamB);
+
+        Member member1 = new Member("member1", 10, teamA);
+        Member member2 = new Member("member2", 20, teamA);
+
+        Member member3 = new Member("member3", 30, teamB);
+        Member member4 = new Member("member4", 40, teamB);
+
+        em.persist(member1);
+        em.persist(member2);
+        em.persist(member3);
+        em.persist(member4);
+
+        //when
+        MemberSearchCondition condition = new MemberSearchCondition();
+        condition.setAgeGoe(35);
+        condition.setAgeLoe(40);
+        condition.setTeamName("teamB");
+
+        //then
+        List<MemberTeamDto> result = memberRepository.search(condition);
+
         assertThat(result).extracting("username").containsExactly("member4");
     }
 
